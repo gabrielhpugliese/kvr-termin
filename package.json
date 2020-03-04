@@ -1,0 +1,14 @@
+{
+  "name": "umschreibung",
+  "version": "1.0.0",
+  "main": "run.js",
+  "scripts": {
+    "start": "node run.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "moment": "^2.24.0",
+    "play-sound": "^1.1.3"
+  }
+}
