@@ -24,12 +24,14 @@ If a date is found, a sound will beep and the appointment will be made. Check yo
 ## Citizen Department (Bürgerburo) - ONLY RUPPERTSTRASSE
 
 1. Go to the appointments page: https://www.muenchen.de/rathaus/terminvereinbarung_bb.html
-2. Choose the type of the appointment
-3. Choose Rupperstrasse
+2. Choose Rupperstrasse
+3. Go to this site in another tab and find the number of your appointment to be used as TERMIN_ID: https://www56.muenchen.de/view-bb-aussenstellen/termin/js/dlListBB.js (E.g.: An- oder Ummeldung - Einzelperson is 1064399)
 4. Change the function `check_dates_curl` with your curl copied from Chrome (go to page above > inspector > network > reload page > right click on index.php (the last one) > copy > copy as cURL)
-5. Run `PHPSESSID="GET_THIS_FROM_THE_CURL_URL" SALUTATION="Herr" NAME="Hahn Thun" BIRTHDAY="01.01.1990" EMAIL="got@it.com" DAYS_IN_ADVANCE=30 yarn kvr`
+5. Run `PHPSESSID="GET_THIS_FROM_THE_CURL_URL" TERMIN_ID="GET_FROM_dlListBB" SALUTATION="Herr" NAME="Hahn Thun" BIRTHDAY="01.01.1990" EMAIL="got@it.com" DAYS_IN_ADVANCE=30 yarn kvr`
 
 For PHPSESSID you get it from the curl you copied from Chrome (Get from PHPSESSID={...here...}).
+
+For TERMIN_ID is basically finding it in the javascript file written above.
 
 For DAYS_IN_ADVANCE choose how many days in advance it should check
 
