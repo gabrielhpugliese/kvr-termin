@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "run.js",
   "scripts": {
-    "drive": "node driving-department.js"
+    "drive": "node driving-department.js",
+    "kvr": "node citizen-department.js"
   },
   "license": "MIT",
   "dependencies": {
