@@ -14,8 +14,7 @@ const {
   MONTHS_IN_ADVANCE,
 } = process.env;
 
-const check_dates_curl = () =>
-  `PASTE_YOUR_CURL_HERE`;
+const check_dates_curl = () => `PASTE_YOUR_CURL_HERE`;
 
 const pick_date_curl = ({ date, time }) =>
   `curl 'https://www22.muenchen.de/view-fs/termin/index.php?' -H 'Connection: keep-alive' -H 'Cache-Control: max-age=0' -H 'Origin: https://www22.muenchen.de' -H 'Upgrade-Insecure-Requests: 1' -H 'Content-Type: application/x-www-form-urlencoded' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36' -H 'Sec-Fetch-User: ?1' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: navigate' -H 'Referer: https://www22.muenchen.de/view-fs/termin/index.php?' -H 'Accept-Encoding: gzip, deflate, br' -H 'Accept-Language: en-GB,en-US;q=0.9,en;q=0.8' -H 'Cookie: PHPSESSID=${PHPSESSID}' --data 'step=WEB_APPOINT_NEW_APPOINT&APPOINT=${encodeURIComponent(

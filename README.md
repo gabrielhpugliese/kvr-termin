@@ -2,13 +2,14 @@
 
 I tried only for Führerscheinstelle page: https://www22.muenchen.de/view-fs/termin/index.php
 
-## Quick start
+## Install
 
 1. `yarn install`
-2. Change the function `check_dates_curl` with your curl copied from Chrome (go to page above > inspector > network > reload page > right click on index.php > copy > copy as cURL)
-3. Run `PHPSESSID="GET_THIS_FROM_THE_CURL_URL" TERMIN_ID="GET_THIS_FROM_INSPECTING_ELEMENT" SALUTATION="Herr" NAME="Hahn Thun" BIRTHDAY="01.01.1990" EMAIL="got@it.com" MONTHS_IN_ADVANCE=1 yarn start`
 
-## Setup
+## Driving Department (Führerscheinstelle)
+
+1. Change the function `check_dates_curl` with your curl copied from Chrome (go to page above > inspector > network > reload page > right click on index.php > copy > copy as cURL)
+2. Run `PHPSESSID="GET_THIS_FROM_THE_CURL_URL" TERMIN_ID="GET_THIS_FROM_INSPECTING_ELEMENT" SALUTATION="Herr" NAME="Hahn Thun" BIRTHDAY="01.01.1990" EMAIL="got@it.com" MONTHS_IN_ADVANCE=1 yarn drive`
 
 For PHPSESSID you get it from the curl you copied from Chrome (Get from PHPSESSID={...here...}).
 

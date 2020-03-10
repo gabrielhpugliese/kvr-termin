@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "run.js",
   "scripts": {
-    "start": "node run.js"
+    "drive": "node driving-department.js"
   },
   "license": "MIT",
   "dependencies": {
