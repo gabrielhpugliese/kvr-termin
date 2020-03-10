@@ -11,7 +11,7 @@ const {
   NAME,
   BIRTHDAY,
   EMAIL,
-  MONTHS_IN_ADVANCE,
+  DAYS_IN_ADVANCE,
 } = process.env;
 
 const check_dates_curl = () => `PASTE_YOUR_CURL_HERE`;
@@ -62,7 +62,7 @@ const run = async () => {
 
     const date = moment(key);
     const wish = moment()
-      .add(MONTHS_IN_ADVANCE, 'month')
+      .add(DAYS_IN_ADVANCE, 'days')
       .endOf('day');
 
     if (date.isBefore(wish) && appoints[key].length !== 0) {
