@@ -3,26 +3,27 @@ const { exec } = require('child_process');
 const cheerio = require('cheerio');
 const player = require('play-sound')((opts = {}));
 const moment = require('moment');
+const fs = require('fs');
+const path = require('path');
+const { default: Axios } = require('axios');
+const inquirer = require('inquirer');
 
-const {
-  PHPSESSID,
-  TERMIN_ID,
-  SALUTATION,
-  NAME,
-  BIRTHDAY,
-  EMAIL,
-  DAYS_IN_ADVANCE,
-} = process.env;
-
-const check_dates_curl = () => `PASTE_YOUR_CURL_HERE`;
+let SALUTATION = '';
+let NAME = '';
+let BIRTHDAY = '';
+let EMAIL = '';
+let DAYS_IN_ADVANCE = '';
+let PHPSESSID = '';
+let TERMIN_ID = '';
+let check_dates_curl = null;
 
 const pick_date_curl = ({ date, time }) =>
-  `curl 'https://www22.muenchen.de/view-fs/termin/index.php?' -H 'Connection: keep-alive' -H 'Cache-Control: max-age=0' -H 'Origin: https://www22.muenchen.de' -H 'Upgrade-Insecure-Requests: 1' -H 'Content-Type: application/x-www-form-urlencoded' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36' -H 'Sec-Fetch-User: ?1' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: navigate' -H 'Referer: https://www22.muenchen.de/view-fs/termin/index.php?' -H 'Accept-Encoding: gzip, deflate, br' -H 'Accept-Language: en-GB,en-US;q=0.9,en;q=0.8' -H 'Cookie: PHPSESSID=${PHPSESSID}' --data 'step=WEB_APPOINT_NEW_APPOINT&APPOINT=${encodeURIComponent(
+  `curl 'https://www22.muenchen.de/view-fs/termin/index.php?' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Cookie: PHPSESSID=${PHPSESSID}' --data 'step=WEB_APPOINT_NEW_APPOINT&APPOINT=${encodeURIComponent(
     TERMIN_ID,
   )}___${date}___${encodeURIComponent(time)}' --compressed`;
 
 const finish_termin_curl = () =>
-  `curl 'https://www22.muenchen.de/view-fs/termin/index.php?' -H 'Connection: keep-alive' -H 'Cache-Control: max-age=0' -H 'Origin: https://www22.muenchen.de' -H 'Upgrade-Insecure-Requests: 1' -H 'Content-Type: application/x-www-form-urlencoded' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36' -H 'Sec-Fetch-User: ?1' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: navigate' -H 'Referer: https://www22.muenchen.de/view-fs/termin/index.php?' -H 'Accept-Encoding: gzip, deflate, br' -H 'Accept-Language: en-GB,en-US;q=0.9,en;q=0.8' -H 'Cookie: PHPSESSID=${PHPSESSID}' --data 'step=WEB_APPOINT_SAVE_APPOINT&CONTACT%5Bsalutation%5D=${SALUTATION}&CONTACT%5Bname%5D=${encodeURIComponent(
+  `curl 'https://www22.muenchen.de/view-fs/termin/index.php?' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Cookie: PHPSESSID=${PHPSESSID}' --data 'step=WEB_APPOINT_SAVE_APPOINT&CONTACT%5Bsalutation%5D=${SALUTATION}&CONTACT%5Bname%5D=${encodeURIComponent(
     NAME,
   )}&CONTACT%5Bbirthday%5D=${BIRTHDAY}&CONTACT%5Bemail%5D=${encodeURIComponent(
     EMAIL,
@@ -41,8 +42,101 @@ const curl = (args) => {
   });
 };
 
+const promptUserInformation = async () => {
+  const prompt = inquirer.createPromptModule();
+  
+  let lastAnswers = {};
+  try {
+    lastAnswers = require('./last-answers.json');
+  } catch (e) { }
+  
+  const answers = await prompt([
+    {
+      message: 'Salutation',
+      name: 'salutation',
+      default: lastAnswers['salutation'] || null,
+      type: 'list',
+      choices: ['Herr', 'Frau', 'Dr'],
+    },
+    {
+      message: 'Name',
+      name: 'name',
+      default: lastAnswers['name'] || null,
+    },
+    {
+      message: 'Birth date (DD.MM.YYYY)',
+      name: 'birthdate',
+      default: lastAnswers['birthdate'] || null,
+    },
+    {
+      message: 'E-mail',
+      name: 'email',
+      default: lastAnswers['email'] || null,
+    },
+    {
+      message: 'Days in advance',
+      name: 'days_in_advance',
+      default: lastAnswers['days_in_advance'] || '30',
+    },
+  ]);
+
+  SALUTATION = answers['salutation'];
+  NAME = answers['name'];
+  BIRTHDAY = answers['birthdate'];
+  EMAIL = answers['email'];
+  DAYS_IN_ADVANCE = answers['days_in_advance'];
+
+  fs.writeFileSync(path.resolve(__dirname, 'last-answers.json'), JSON.stringify(answers, null, 4), { encoding: 'utf8' });
+}
+
+const setUp = async () => {
+  const req = await Axios.get('https://www22.muenchen.de/view-fs/termin/')
+  const $ = cheerio.load(req.data);
+
+  /* Request type of appointment */
+  const prompt = inquirer.createPromptModule();
+  const inputs = $('[name^="CASETYPES"]');
+  const options = inputs.siblings('label')
+    .map((index, el) =>
+      $(el).text()
+        .replace('aufrufen', '')
+        .replace('Weitere Informationen zur Dienstleistung', '')
+        .replace('Dienstleistung', '')
+        .trim())
+    .toArray();
+
+  const answer = await prompt({
+    type: 'list',
+    name: 'Which appointment do you need?',
+    choices: options,
+  });
+  const appointmentType = Object.values(answer)[0];
+  const appointmentIndex = options.indexOf(appointmentType);
+
+  /* Sets up form data for dates check request */
+  const formData = {};
+  $('form [name]').each((index, input) => {
+    formData[input.attribs.name] = input.attribs.value || '0';
+  });
+
+  formData[inputs.get(appointmentIndex).attribs.name] = '1';
+
+  PHPSESSID = req.headers['set-cookie'][0].split(';')[0].split('=')[1];
+  check_dates_curl = () => `curl 'https://www22.muenchen.de/view-fs/termin/index.php?' \
+-H 'Content-Type: application/x-www-form-urlencoded' \
+-H 'Cookie: PHPSESSID=${PHPSESSID}' \
+--data-raw '${Object.entries(formData).map(([name, value]) => decodeURIComponent(name) + '=' + decodeURIComponent(value)).join('&')}' \
+--compressed`;
+}
+
 const run = async () => {
   console.log('Running', moment().toISOString());
+
+  if (!check_dates_curl) {
+    console.log('Failed to use dates request. Aborting...');
+    process.exit();
+  }
+  
   const page = await curl(check_dates_curl());
   const $ = cheerio.load(page);
   const script = $('script').get(3);
@@ -52,6 +146,8 @@ const run = async () => {
       .html()
       .split(/'/)[1],
   );
+
+  TERMIN_ID = TERMIN_ID || Object.keys(jsonAppointments)[0];
 
   const appoints = jsonAppointments[TERMIN_ID].appoints;
   let found;
@@ -87,12 +183,17 @@ const run = async () => {
   process.exit();
 };
 
-run();
-setInterval(async () => {
-  try {
-    await run();
-  } catch (err) {
-    console.log('some error happened, trying again');
-    console.error(err);
-  }
-}, 30 * 1000);
+(async function () {
+  await promptUserInformation();
+  await setUp();
+  await run();
+
+  setInterval(async () => {
+    try {
+      await run();
+    } catch (err) {
+      console.log('some error happened, trying again');
+      console.error(err);
+    }
+  }, 30 * 1000);
+})();

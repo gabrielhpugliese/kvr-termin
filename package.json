@@ -8,7 +8,9 @@
   },
   "license": "MIT",
   "dependencies": {
+    "axios": "^0.20.0",
     "cheerio": "^1.0.0-rc.3",
+    "inquirer": "^7.3.3",
     "moment": "^2.24.0",
     "play-sound": "^1.1.3"
   }
