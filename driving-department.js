@@ -5,6 +5,7 @@ const player = require('play-sound')((opts = {}));
 const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
+const { default: Axios } = require('axios');
 const inquirer = require('inquirer');
 
 let SALUTATION = '';
@@ -87,8 +88,49 @@ const promptUserInformation = async () => {
 
   fs.writeFileSync(path.resolve(__dirname, 'last-answers.json'), JSON.stringify(answers, null, 4), { encoding: 'utf8' });
 }
+
+const setUp = async () => {
+  const req = await Axios.get('https://www22.muenchen.de/view-fs/termin/')
+  const $ = cheerio.load(req.data);
+
+  /* Request type of appointment */
+  const prompt = inquirer.createPromptModule();
+  const inputs = $('[name^="CASETYPES"]');
+  const options = inputs.closest('ul').prev().find('h3').map((index, el) => $(el).text().replace('Kategorie', '').trim()).toArray();
+
+  const appointmentType = await prompt([
+    {
+      type: 'list',
+      name: 'Which appointment do you need?',
+      choices: options,
+    }
+  ]);
+  const appointmentIndex = options.indexOf(appointmentType);
+
+  /* Sets up form data for dates check request */
+  const formData = {};
+  $('form [name]').each((index, input) => {
+    formData[input.attribs.name] = input.attribs.value || '0';
+  });
+
+  formData[inputs.get(appointmentIndex).attribs.name] = '1';
+
+  PHPSESSID = req.headers['set-cookie'][0].split(';')[0].split('=')[1];
+  check_dates_curl = () => `curl 'https://www22.muenchen.de/view-fs/termin/index.php?' \
+-H 'Content-Type: application/x-www-form-urlencoded' \
+-H 'Cookie: PHPSESSID=${PHPSESSID}' \
+--data-raw '${Object.entries(formData).map(([name, value]) => decodeURIComponent(name) + '=' + decodeURIComponent(value)).join('&')}' \
+--compressed`;
+}
+
 const run = async () => {
   console.log('Running', moment().toISOString());
+
+  if (!check_dates_curl) {
+    console.log('Failed to use dates request. Aborting...');
+    process.exit();
+  }
+  
   const page = await curl(check_dates_curl());
   const $ = cheerio.load(page);
   const script = $('script').get(3);
@@ -137,6 +179,7 @@ const run = async () => {
 
 (async function () {
   await promptUserInformation();
+  await setUp();
   await run();
 
   setInterval(async () => {
