@@ -53,6 +53,8 @@ const run = async () => {
       .split(/'/)[1],
   );
 
+  TERMIN_ID = TERMIN_ID || Object.keys(jsonAppointments)[0];
+
   const appoints = jsonAppointments[TERMIN_ID].appoints;
   let found;
   Object.keys(appoints).forEach((key) => {
