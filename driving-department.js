@@ -96,15 +96,21 @@ const setUp = async () => {
   /* Request type of appointment */
   const prompt = inquirer.createPromptModule();
   const inputs = $('[name^="CASETYPES"]');
-  const options = inputs.closest('ul').prev().find('h3').map((index, el) => $(el).text().replace('Kategorie', '').trim()).toArray();
+  const options = inputs.siblings('label')
+    .map((index, el) =>
+      $(el).text()
+        .replace('aufrufen', '')
+        .replace('Weitere Informationen zur Dienstleistung', '')
+        .replace('Dienstleistung', '')
+        .trim())
+    .toArray();
 
-  const appointmentType = await prompt([
-    {
-      type: 'list',
-      name: 'Which appointment do you need?',
-      choices: options,
-    }
-  ]);
+  const answer = await prompt({
+    type: 'list',
+    name: 'Which appointment do you need?',
+    choices: options,
+  });
+  const appointmentType = Object.values(answer)[0];
   const appointmentIndex = options.indexOf(appointmentType);
 
   /* Sets up form data for dates check request */
