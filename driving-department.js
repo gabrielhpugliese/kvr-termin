@@ -3,18 +3,18 @@ const { exec } = require('child_process');
 const cheerio = require('cheerio');
 const player = require('play-sound')((opts = {}));
 const moment = require('moment');
+const fs = require('fs');
+const path = require('path');
+const inquirer = require('inquirer');
 
-const {
-  PHPSESSID,
-  TERMIN_ID,
-  SALUTATION,
-  NAME,
-  BIRTHDAY,
-  EMAIL,
-  DAYS_IN_ADVANCE,
-} = process.env;
-
-const check_dates_curl = () => `PASTE_YOUR_CURL_HERE`;
+let SALUTATION = '';
+let NAME = '';
+let BIRTHDAY = '';
+let EMAIL = '';
+let DAYS_IN_ADVANCE = '';
+let PHPSESSID = '';
+let TERMIN_ID = '';
+let check_dates_curl = null;
 
 const pick_date_curl = ({ date, time }) =>
   `curl 'https://www22.muenchen.de/view-fs/termin/index.php?' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Cookie: PHPSESSID=${PHPSESSID}' --data 'step=WEB_APPOINT_NEW_APPOINT&APPOINT=${encodeURIComponent(
@@ -41,6 +41,52 @@ const curl = (args) => {
   });
 };
 
+const promptUserInformation = async () => {
+  const prompt = inquirer.createPromptModule();
+  
+  let lastAnswers = {};
+  try {
+    lastAnswers = require('./last-answers.json');
+  } catch (e) { }
+  
+  const answers = await prompt([
+    {
+      message: 'Salutation',
+      name: 'salutation',
+      default: lastAnswers['salutation'] || null,
+      type: 'list',
+      choices: ['Herr', 'Frau', 'Dr'],
+    },
+    {
+      message: 'Name',
+      name: 'name',
+      default: lastAnswers['name'] || null,
+    },
+    {
+      message: 'Birth date (DD.MM.YYYY)',
+      name: 'birthdate',
+      default: lastAnswers['birthdate'] || null,
+    },
+    {
+      message: 'E-mail',
+      name: 'email',
+      default: lastAnswers['email'] || null,
+    },
+    {
+      message: 'Days in advance',
+      name: 'days_in_advance',
+      default: lastAnswers['days_in_advance'] || '30',
+    },
+  ]);
+
+  SALUTATION = answers['salutation'];
+  NAME = answers['name'];
+  BIRTHDAY = answers['birthdate'];
+  EMAIL = answers['email'];
+  DAYS_IN_ADVANCE = answers['days_in_advance'];
+
+  fs.writeFileSync(path.resolve(__dirname, 'last-answers.json'), JSON.stringify(answers, null, 4), { encoding: 'utf8' });
+}
 const run = async () => {
   console.log('Running', moment().toISOString());
   const page = await curl(check_dates_curl());
@@ -89,12 +135,16 @@ const run = async () => {
   process.exit();
 };
 
-run();
-setInterval(async () => {
-  try {
-    await run();
-  } catch (err) {
-    console.log('some error happened, trying again');
-    console.error(err);
-  }
-}, 30 * 1000);
+(async function () {
+  await promptUserInformation();
+  await run();
+
+  setInterval(async () => {
+    try {
+      await run();
+    } catch (err) {
+      console.log('some error happened, trying again');
+      console.error(err);
+    }
+  }, 30 * 1000);
+})();
